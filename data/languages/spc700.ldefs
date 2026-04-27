@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<language_definitions>
+
+  <language processor="SPC700"
+            endian="little"
+            size="16"
+            variant="default"
+            version="0.1"
+            slafile="spc700.sla"
+            processorspec="spc700.pspec"
+            id="SPC700:LE:16:default">
+    <description>Sony SPC700 skeleton processor module scaffold.</description>
+    <compiler name="default" spec="spc700.cspec" id="default"/>
+  </language>
+
+</language_definitions>
