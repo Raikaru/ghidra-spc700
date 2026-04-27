@@ -12,7 +12,7 @@ public class SemanticSmoke extends GhidraScript {
     @Override
     public void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 1) {
+        if (args.length < 1) {
             throw new IllegalArgumentException("usage: SemanticSmoke <language-id>");
         }
         String actualLanguage = currentProgram.getLanguageID().getIdAsString();
