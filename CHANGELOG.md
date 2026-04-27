@@ -29,4 +29,8 @@ All notable changes to `ghidra-spc700` will be documented in this file.
   `ADDW`/`SUBW`/`CMPW` word operations, with smoke coverage.
 - Direct-page bit set/clear operations and bit/compare/decrement branch forms
   (`SET1`, `CLR1`, `BBS`, `BBC`, `CBNE`, `DBNZ`), with smoke coverage.
+- Remaining SPC700 opcode constructors, covering `TCALL`, `PCALL`, `JMP
+  [!abs+X]`, `RETI`, `SLEEP`, `STOP`, memory-bit carry operations, `TSET1`,
+  `TCLR1`, `MOVW`, `INCW`, `DECW`, `MUL`, `DIV`, `DAA`, `DAS`, and `XCN`,
+  with smoke coverage for the completed opcode map.
 - Headless smoke script and workflow smoke import for the initial subset.

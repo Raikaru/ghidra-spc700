@@ -146,3 +146,15 @@ jobs:
             -scriptPath scripts \
             -postScript ProcessorSmoke.java SPC700:LE:16:default "${bitbranch_expected[@]}" \
             -deleteProject
+
+          printf '\x01\x11\x21\x31\x41\x51\x61\x71\x81\x91\xA1\xB1\xC1\xD1\xE1\xF1\x0A\x00\x20\x0E\x00\x20\x1A\x10\x1F\x00\x20\x2A\x00\x20\x3A\x10\x4A\x00\x20\x4E\x00\x20\x4F\x80\x6A\x00\x20\x7F\x8A\x00\x20\x9E\x9F\xAA\x00\x20\xBA\x10\xBE\xCA\x00\x20\xCF\xDA\x10\xDF\xEA\x00\x20\xED\xEF\xFF' > smoke/remaining.bin
+          remaining_expected=(TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL TCALL OR1 TSET1 DECW JMP OR1 INCW AND1 TCLR1 PCALL AND1 RETI EOR1 DIV XCN MOV1 MOVW DAS MOV1 MUL MOVW DAA NOT1 NOTC SLEEP STOP)
+          ghidra/support/analyzeHeadless "$PWD" smoke-remaining-proj \
+            -import smoke/remaining.bin \
+            -processor SPC700:LE:16:default \
+            -cspec default \
+            -loader BinaryLoader \
+            -loader-baseAddr 0x0000 \
+            -scriptPath scripts \
+            -postScript ProcessorSmoke.java SPC700:LE:16:default "${remaining_expected[@]}" \
+            -deleteProject

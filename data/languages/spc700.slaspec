@@ -16,6 +16,8 @@ define token opbyte (8)
 ;
 
 define pcodeop spc_brk;
+define pcodeop spc_sleep;
+define pcodeop spc_stop;
 
 define token data8 (8)
   imm8 = (0,7)
@@ -24,6 +26,8 @@ define token data8 (8)
 
 define token data16 (16)
   imm16 = (0,15)
+  bitaddr = (0,12)
+  bitnum = (13,15)
   src8 = (0,7)
   dst8 = (8,15)
 ;
@@ -109,6 +113,12 @@ macro cmp16(lhs, rhs) {
   pack_psw();
 }
 
+macro ya_nz16(v) {
+  ZF = (v == 0);
+  NF = (v s< 0);
+  pack_psw();
+}
+
 macro stack_addr(out) {
   out = 0x0100 | zext(SP);
 }
@@ -128,6 +138,7 @@ macro pop8(out) {
 }
 
 RelTarget: $target is rel8 [ target = (inst_next + rel8) & 0xffff; ] { export *:2 target; }
+PCallTarget: $target is imm8 [ target = 0xff00 + imm8; ] { export *:2 target; }
 Abs: !$imm16 is imm16 { export *:2 imm16; }
 AbsX: !$imm16 "+X" is imm16 { local addr:2 = imm16 + zext(X); export *:2 addr; }
 AbsY: !$imm16 "+Y" is imm16 { local addr:2 = imm16 + zext(Y); export *:2 addr; }
@@ -185,8 +196,29 @@ DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
 
 :CALL Abs is op=0x3f; Abs { call Abs; }
 :JMP Abs is op=0x5f; Abs { goto Abs; }
+:JMP "[" !$imm16 "+X]" is op=0x1f; imm16 { local ptr:2 = imm16 + zext(X); goto [*:2 ptr]; }
+:PCALL PCallTarget is op=0x4f; PCallTarget { call PCallTarget; }
+:TCALL "0" is op=0x01 { local ptr:2 = 0xffde; call [*:2 ptr]; }
+:TCALL "1" is op=0x11 { local ptr:2 = 0xffdc; call [*:2 ptr]; }
+:TCALL "2" is op=0x21 { local ptr:2 = 0xffda; call [*:2 ptr]; }
+:TCALL "3" is op=0x31 { local ptr:2 = 0xffd8; call [*:2 ptr]; }
+:TCALL "4" is op=0x41 { local ptr:2 = 0xffd6; call [*:2 ptr]; }
+:TCALL "5" is op=0x51 { local ptr:2 = 0xffd4; call [*:2 ptr]; }
+:TCALL "6" is op=0x61 { local ptr:2 = 0xffd2; call [*:2 ptr]; }
+:TCALL "7" is op=0x71 { local ptr:2 = 0xffd0; call [*:2 ptr]; }
+:TCALL "8" is op=0x81 { local ptr:2 = 0xffce; call [*:2 ptr]; }
+:TCALL "9" is op=0x91 { local ptr:2 = 0xffcc; call [*:2 ptr]; }
+:TCALL "10" is op=0xa1 { local ptr:2 = 0xffca; call [*:2 ptr]; }
+:TCALL "11" is op=0xb1 { local ptr:2 = 0xffc8; call [*:2 ptr]; }
+:TCALL "12" is op=0xc1 { local ptr:2 = 0xffc6; call [*:2 ptr]; }
+:TCALL "13" is op=0xd1 { local ptr:2 = 0xffc4; call [*:2 ptr]; }
+:TCALL "14" is op=0xe1 { local ptr:2 = 0xffc2; call [*:2 ptr]; }
+:TCALL "15" is op=0xf1 { local ptr:2 = 0xffc0; call [*:2 ptr]; }
 :RET is op=0x6f { local retsp:1 = SP + 1; local addr:2 = 0x0100 | zext(retsp); return [*:2 addr]; }
+:RETI is op=0x7f { pop8(PSW); unpack_psw(); local retsp:1 = SP + 1; local addr:2 = 0x0100 | zext(retsp); SP = SP + 2; return [*:2 addr]; }
 :BRK is op=0x0f { spc_brk(); }
+:SLEEP is op=0xef { spc_sleep(); }
+:STOP is op=0xff { spc_stop(); }
 
 :MOV "A",Imm8 is op=0xe8; Imm8 { A = Imm8; flags_nz8(A); }
 :MOV "X",Imm8 is op=0xcd; Imm8 { X = Imm8; flags_nz8(X); }
@@ -359,6 +391,41 @@ DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
 :ADDW "YA",Dp is op=0x7a; Dp { local ya:2 = (zext(Y) << 8) | zext(A); local rhs:2 = *:2 Dp; local result:2 = ya + rhs; A = result:1; Y = result(1); flags_nzvch16(ya, rhs, result); }
 :SUBW "YA",Dp is op=0x9a; Dp { local ya:2 = (zext(Y) << 8) | zext(A); local rhs:2 = *:2 Dp; local result:2 = ya - rhs; A = result:1; Y = result(1); cmp16(ya, rhs); }
 :CMPW "YA",Dp is op=0x5a; Dp { local ya:2 = (zext(Y) << 8) | zext(A); cmp16(ya, *:2 Dp); }
+:MOVW "YA",Dp is op=0xba; Dp { local value:2 = *:2 Dp; A = value:1; Y = value(1); ya_nz16(value); }
+:MOVW Dp,"YA" is op=0xda; Dp { local value:2 = (zext(Y) << 8) | zext(A); *:2 Dp = value; }
+:INCW Dp is op=0x3a; Dp { local value:2 = *:2 Dp + 1; *:2 Dp = value; ya_nz16(value); }
+:DECW Dp is op=0x1a; Dp { local value:2 = *:2 Dp - 1; *:2 Dp = value; ya_nz16(value); }
+:MUL "YA" is op=0xcf { local result:2 = zext(Y) * zext(A); A = result:1; Y = result(1); flags_nz8(Y); }
+:DIV "YA","X" is op=0x9e { local ya:2 = (zext(Y) << 8) | zext(A); local divisor:2 = zext(X); local quotient:2 = ya / divisor; local remainder:2 = ya - (quotient * divisor); HF = ((X & 0x0f) <= (Y & 0x0f)); VF = (quotient > 0xff); A = quotient:1; Y = remainder:1; flags_nz8(A); }
+:DAA "A" is op=0xdf {
+  if ((CF != 0) || (A > 0x99)) goto <daa_high>;
+  goto <daa_low_check>;
+<daa_high>
+  A = A + 0x60;
+  CF = 1;
+<daa_low_check>
+  if (((A & 0x0f) > 9) || (HF != 0)) goto <daa_low>;
+  goto <daa_done>;
+<daa_low>
+  A = A + 6;
+<daa_done>
+  flags_nz8(A);
+}
+:DAS "A" is op=0xbe {
+  if ((CF == 0) || (A > 0x99)) goto <das_high>;
+  goto <das_low_check>;
+<das_high>
+  A = A - 0x60;
+  CF = 0;
+<das_low_check>
+  if (((A & 0x0f) > 9) || (HF == 0)) goto <das_low>;
+  goto <das_done>;
+<das_low>
+  A = A - 6;
+<das_done>
+  flags_nz8(A);
+}
+:XCN "A" is op=0x9f { A = (A << 4) | (A >> 4); flags_nz8(A); }
 :PUSH "A" is op=0x2d { push8(A); }
 :PUSH "X" is op=0x4d { push8(X); }
 :PUSH "Y" is op=0x6d { push8(Y); }
@@ -400,3 +467,26 @@ DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
 :CLR1 DpBit6 is op=0xd2; DpBit6 { DpBit6 = DpBit6 & 0xbf; }
 :SET1 DpBit7 is op=0xe2; DpBit7 { DpBit7 = DpBit7 | 0x80; }
 :CLR1 DpBit7 is op=0xf2; DpBit7 { DpBit7 = DpBit7 & 0x7f; }
+
+:OR1 "C",!$bitaddr "."^bitnum is op=0x0a; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; CF = (CF != 0) || ((value & mask) != 0); pack_psw(); }
+:OR1 "C","/" !$bitaddr "."^bitnum is op=0x2a; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; CF = (CF != 0) || ((value & mask) == 0); pack_psw(); }
+:AND1 "C",!$bitaddr "."^bitnum is op=0x4a; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; CF = (CF != 0) && ((value & mask) != 0); pack_psw(); }
+:AND1 "C","/" !$bitaddr "."^bitnum is op=0x6a; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; CF = (CF != 0) && ((value & mask) == 0); pack_psw(); }
+:EOR1 "C",!$bitaddr "."^bitnum is op=0x8a; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; local bit:1 = ((value & mask) != 0); CF = CF ^ bit; pack_psw(); }
+:MOV1 "C",!$bitaddr "."^bitnum is op=0xaa; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; CF = ((value & mask) != 0); pack_psw(); }
+:MOV1 !$bitaddr "."^bitnum,"C" is op=0xca; bitaddr & bitnum {
+  local addr:2 = bitaddr;
+  local value:1 = *:1 addr;
+  local mask:1 = 1 << bitnum;
+  if (CF != 0) goto <mov1_set>;
+  value = value & ~mask;
+  goto <mov1_done>;
+<mov1_set>
+  value = value | mask;
+<mov1_done>
+  *:1 addr = value;
+}
+:NOT1 !$bitaddr "."^bitnum is op=0xea; bitaddr & bitnum { local addr:2 = bitaddr; local value:1 = *:1 addr; local mask:1 = 1 << bitnum; *:1 addr = value ^ mask; }
+:NOTC is op=0xed { CF = (CF == 0); pack_psw(); }
+:TSET1 Abs is op=0x0e; Abs { local value:1 = *:1 Abs; local result:1 = A - value; ZF = (result == 0); NF = (result s< 0); *:1 Abs = value | A; pack_psw(); }
+:TCLR1 Abs is op=0x4e; Abs { local value:1 = *:1 Abs; local result:1 = A - value; ZF = (result == 0); NF = (result s< 0); *:1 Abs = value & ~A; pack_psw(); }
