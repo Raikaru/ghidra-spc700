@@ -4,10 +4,11 @@ Sony SPC700 processor module scaffold for Ghidra.
 
 ## Status
 
-This repository currently contains a minimal language scaffold that compiles,
-but it is not yet a usable SPC700 disassembler/decompiler. The present SLEIGH
-spec only defines a placeholder `NOP` instruction so CI can verify module
-packaging and language registration early.
+This repository currently contains an early but compiling SPC700 language
+implementation. It is not complete, but it has enough structure for Ghidra to
+register the language and disassemble a small core subset: `NOP`, common
+branches, `CALL`/`JMP`/`RET`, immediate/data moves, pushes/pops, register
+increments/decrements, and basic flag-control instructions.
 
 ## Layout
 
@@ -30,8 +31,8 @@ tests/
 
 ## Next implementation targets
 
-1. Register file and flags with correct naming and bit layout.
-2. Core addressing modes.
-3. Control-flow instructions.
-4. ALU/load-store coverage.
-5. Basic headless smoke tests.
+1. Complete register/flag semantics and PSW packing/unpacking.
+2. Add the remaining addressing modes.
+3. Add ALU, bit, multiplication/division, and word operations.
+4. Add vector/default-symbol support for SPC dumps.
+5. Expand headless smoke tests into opcode-family coverage.
