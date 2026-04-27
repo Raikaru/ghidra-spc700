@@ -27,6 +27,7 @@ public class SemanticSmoke extends GhidraScript {
         try {
             runDirectPagePFlag(start);
             runDecimalAndMulFlags(start.add(6));
+            runRegisterIndirectAndWordWrap(start.add(9));
         }
         finally {
             emu.dispose();
@@ -53,6 +54,27 @@ public class SemanticSmoke extends GhidraScript {
         expectReg("A", 0x11);
         expectReg("NF", 0);
         expectReg("ZF", 0);
+    }
+
+    private void runRegisterIndirectAndWordWrap(Address start) throws Exception {
+        emu.writeRegister("PC", start.getOffset());
+        emu.writeRegister("PF", 0);
+        emu.writeRegister("X", 0x20);
+        emu.writeRegister("SP", 0xff);
+        emu.writeMemory(addr(0x0020), new byte[] { 0x22 });
+        emu.writeMemory(addr(0x0120), new byte[] { 0x44 });
+
+        step("SETP before MOV A,(X)");
+        expectReg("PF", 1);
+        step("MOV A,(X) with P=1");
+        expectReg("A", 0x44);
+
+        emu.writeMemory(addr(0x01ff), new byte[] { 0x34 });
+        emu.writeMemory(addr(0x0100), new byte[] { 0x12 });
+        emu.writeMemory(addr(0x0200), new byte[] { (byte) 0xee });
+        step("MOVW YA,dp wraps within direct page");
+        expectReg("A", 0x34);
+        expectReg("Y", 0x12);
     }
 
     private void runDecimalAndMulFlags(Address start) throws Exception {

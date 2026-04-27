@@ -6,7 +6,7 @@
             endian="little"
             size="16"
             variant="default"
-            version="0.1.0"
+            version="0.1.1"
             slafile="spc700.sla"
             processorspec="spc700.pspec"
             id="SPC700:LE:16:default">

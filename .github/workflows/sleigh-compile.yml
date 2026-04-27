@@ -182,7 +182,7 @@ jobs:
               'JMP [ !$0x2000 +X]' \
             -deleteProject
 
-          printf '\x40\xE4\x10\x20\xE4\x10\xDF\xBE\xCF' > smoke/semantic.bin
+          printf '\x40\xE4\x10\x20\xE4\x10\xDF\xBE\xCF\x40\xE6\xBA\xFF' > smoke/semantic.bin
           ghidra/support/analyzeHeadless "$PWD" smoke-semantic-proj \
             -import smoke/semantic.bin \
             -processor SPC700:LE:16:default \
