@@ -9,4 +9,8 @@ All notable changes to `ghidra-spc700` will be documented in this file.
 - Initial repository scaffold for a standalone SPC700 Ghidra processor module.
 - Minimal language registration files (`ldefs`, `cspec`, `pspec`, `slaspec`).
 - CI skeleton that downloads Ghidra and compiles the processor module.
-- Placeholder `NOP` instruction so the initial SLEIGH module compiles.
+
+- Initial instruction subset covering `NOP`, common branches, `CALL` / `JMP` /
+  `RET`, immediate/data moves, pushes/pops, register inc/dec, and basic flag
+  control instructions.
+- Headless smoke script and workflow smoke import for the initial subset.
