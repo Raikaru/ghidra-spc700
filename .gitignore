@@ -1,0 +1,8 @@
+ghidra/
+*.sla
+*.sla.md5
+sleigh.log
+java-classes/
+smoke/
+smoke-proj/
+smoke-proj.gpr
