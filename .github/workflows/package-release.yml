@@ -54,16 +54,16 @@ jobs:
           mv "$inner"/* ghidra/
           rmdir "$inner"
 
-      - name: Stage and compile processor
+      - name: Stage and compile extension
         run: |
           set -euo pipefail
-          dest="package/Ghidra/Processors/SPC700"
-          mkdir -p "$dest"
-          cp Module.manifest "$dest/"
-          cp -r data "$dest/"
+          mkdir -p package
+          cp extension.properties package/
+          cp Module.manifest package/
+          cp -r data package/
           chmod +x ghidra/support/sleigh
-          ghidra/support/sleigh -a "$dest"
-          test -f "$dest/data/languages/spc700.sla"
+          ghidra/support/sleigh -a package
+          test -f package/data/languages/spc700.sla
 
       - name: Create installable zip
         id: zip
@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           ref="${GITHUB_REF_NAME:-manual}"
           name="ghidra-spc700-${ref}.zip"
-          (cd package && zip -qr "../$name" Ghidra)
+          (cd package && zip -qr "../$name" extension.properties Module.manifest data)
           sha256sum "$name" | tee "$name.sha256"
           echo "name=$name" >> "$GITHUB_OUTPUT"
 

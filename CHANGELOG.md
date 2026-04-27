@@ -2,6 +2,19 @@
 
 All notable changes to `ghidra-spc700` will be documented in this file.
 
+## [0.1.1] - 2026-04-27
+
+### Fixed
+
+- Corrected `(X)`, `(X)+`, and `(X),(Y)` direct-page addressing to honor the
+  `P` flag at runtime.
+- Corrected direct-page word operations to wrap the high byte within the
+  selected direct page.
+- Packaged release zips as installable Ghidra extensions with
+  `extension.properties` at the zip root.
+- Expanded semantic smoke coverage for register-indirect direct-page and
+  direct-page word wrap behavior.
+
 ## [0.1.0] - 2026-04-26
 
 ### Added
