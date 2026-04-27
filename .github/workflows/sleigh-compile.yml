@@ -97,6 +97,8 @@ jobs:
           set -euo pipefail
           mkdir -p smoke scripts
           cp tests/ProcessorSmoke.java scripts/
+          cp tests/InstructionTextSmoke.java scripts/
+          cp tests/SemanticSmoke.java scripts/
           printf '\xE8\x12\xCD\x02\x8D\x03\x88\x01\x86\x84\x10\x94\x11\x85\x00\x20\x95\x02\x20\x96\x04\x20\x87\x12\x97\x13\xA8\x01\xA6\xA4\x10\xB4\x11\xA5\x00\x20\xB5\x02\x20\xB6\x04\x20\xA7\x12\xB7\x13\x28\x0F\x26\x24\x10\x34\x11\x25\x00\x20\x35\x02\x20\x36\x04\x20\x27\x12\x37\x13\x48\xF0\x46\x44\x10\x54\x11\x45\x00\x20\x55\x02\x20\x56\x04\x20\x47\x12\x57\x13\x08\x01\x06\x04\x10\x14\x11\x05\x00\x20\x15\x02\x20\x16\x04\x20\x07\x12\x17\x13\x68\x01\x66\x64\x10\x74\x11\x65\x00\x20\x75\x02\x20\x76\x04\x20\x67\x12\x77\x13\x99\x89\x10\x11\x98\x01\x11\xB9\xA9\x10\x11\xB8\x01\x11\x39\x29\x10\x11\x38\x01\x11\x59\x49\x10\x11\x58\x01\x11\x19\x09\x10\x11\x18\x01\x11\x79\x69\x10\x11\x78\x01\x11\x3D\x2F\x01\x00' > smoke/spc700.bin
           expected=(MOV MOV MOV ADC ADC ADC ADC ADC ADC ADC ADC ADC SBC SBC SBC SBC SBC SBC SBC SBC SBC AND AND AND AND AND AND AND AND AND EOR EOR EOR EOR EOR EOR EOR EOR EOR OR OR OR OR OR OR OR OR OR CMP CMP CMP CMP CMP CMP CMP CMP CMP ADC ADC ADC SBC SBC SBC AND AND AND EOR EOR EOR OR OR OR CMP CMP CMP INC BRA NOP)
           ghidra/support/analyzeHeadless "$PWD" smoke-proj \
@@ -157,4 +159,36 @@ jobs:
             -loader-baseAddr 0x0000 \
             -scriptPath scripts \
             -postScript ProcessorSmoke.java SPC700:LE:16:default "${remaining_expected[@]}" \
+            -deleteProject
+
+          printf '\x0A\x00\x20\x2A\x00\x40\x4A\x00\x60\x6A\x00\x80\x8A\x00\xA0\xAA\x00\xC0\xCA\x00\xE0\xEA\x00\x20\x4F\x80\x1F\x00\x20' > smoke/text.bin
+          ghidra/support/analyzeHeadless "$PWD" smoke-text-proj \
+            -import smoke/text.bin \
+            -processor SPC700:LE:16:default \
+            -cspec default \
+            -loader BinaryLoader \
+            -loader-baseAddr 0x0000 \
+            -scriptPath scripts \
+            -postScript InstructionTextSmoke.java SPC700:LE:16:default \
+              'OR1 C,!$0x0 .0x1' \
+              'OR1 C,/ !$0x0 .0x2' \
+              'AND1 C,!$0x0 .0x3' \
+              'AND1 C,/ !$0x0 .0x4' \
+              'EOR1 C,!$0x0 .0x5' \
+              'MOV1 C,!$0x0 .0x6' \
+              'MOV1 !$0x0 .0x7,C' \
+              'NOT1 !$0x0 .0x1' \
+              'PCALL $0xff80' \
+              'JMP [ !$0x2000 +X]' \
+            -deleteProject
+
+          printf '\x40\xE4\x10\x20\xE4\x10\xDF\xBE\xCF' > smoke/semantic.bin
+          ghidra/support/analyzeHeadless "$PWD" smoke-semantic-proj \
+            -import smoke/semantic.bin \
+            -processor SPC700:LE:16:default \
+            -cspec default \
+            -loader BinaryLoader \
+            -loader-baseAddr 0x0000 \
+            -scriptPath scripts \
+            -postScript SemanticSmoke.java SPC700:LE:16:default \
             -deleteProject

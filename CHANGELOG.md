@@ -33,4 +33,12 @@ All notable changes to `ghidra-spc700` will be documented in this file.
   [!abs+X]`, `RETI`, `SLEEP`, `STOP`, memory-bit carry operations, `TSET1`,
   `TCLR1`, `MOVW`, `INCW`, `DECW`, `MUL`, `DIV`, `DAA`, `DAS`, and `XCN`,
   with smoke coverage for the completed opcode map.
+- Direct-page addressing now tracks the `P` flag through `CLRP`/`SETP` context,
+  and normal memory operands export effective addresses instead of being
+  double-dereferenced in p-code.
+- Added exact instruction-text and emulator semantic smoke scripts for
+  high-risk operand rendering, direct-page `P` behavior, and selected flag
+  semantics.
+- Added release packaging workflow that builds an installable
+  `Ghidra/Processors/SPC700` zip and attaches it to tagged GitHub releases.
 - Headless smoke script and workflow smoke import for the initial subset.
