@@ -32,16 +32,17 @@ macro flags_nz8(v) {
   NF = (value s< 0);
 }
 
-macro flags_add8(lhs, rhs, result) {
-  local wide:2 = zext(lhs) + zext(rhs);
+macro flags_adc8(lhs, rhs, carry, result) {
+  local wide:2 = zext(lhs) + zext(rhs) + zext(carry);
   CF = (wide > 0xff);
   HF = (((lhs ^ rhs ^ result) & 0x10) != 0);
   VF = (((lhs ^ result) & (rhs ^ result) & 0x80) != 0);
   flags_nz8(result);
 }
 
-macro flags_sub8(lhs, rhs, result) {
-  CF = (lhs >= rhs);
+macro flags_sbc8(lhs, rhs, borrow, result) {
+  local subtrahend:2 = zext(rhs) + zext(borrow);
+  CF = (zext(lhs) >= subtrahend);
   HF = (((lhs ^ rhs ^ result) & 0x10) != 0);
   VF = (((lhs ^ rhs) & (lhs ^ result) & 0x80) != 0);
   flags_nz8(result);
@@ -106,16 +107,15 @@ Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
 
 :ADC "A",Imm8 is op=0x88; Imm8 {
   local olda:1 = A;
-  local rhs:1 = Imm8 + CF;
-  A = A + rhs;
-  flags_add8(olda, rhs, A);
+  local carry:1 = CF;
+  A = A + Imm8 + carry;
+  flags_adc8(olda, Imm8, carry, A);
 }
 :SBC "A",Imm8 is op=0xa8; Imm8 {
   local olda:1 = A;
   local borrow:1 = (CF == 0);
-  local rhs:1 = Imm8 + borrow;
-  A = A - rhs;
-  flags_sub8(olda, rhs, A);
+  A = A - Imm8 - borrow;
+  flags_sbc8(olda, Imm8, borrow, A);
 }
 :AND "A",Imm8 is op=0x28; Imm8 { A = A & Imm8; flags_nz8(A); }
 :EOR "A",Imm8 is op=0x48; Imm8 { A = A ^ Imm8; flags_nz8(A); }
@@ -123,6 +123,29 @@ Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
 :CMP "A",Imm8 is op=0x68; Imm8 {
   local result:1 = A - Imm8;
   CF = (A >= Imm8);
+  flags_nz8(result);
+}
+:ADC "A",Dp is op=0x84; Dp {
+  local olda:1 = A;
+  local value:1 = *:1 Dp;
+  local carry:1 = CF;
+  A = A + value + carry;
+  flags_adc8(olda, value, carry, A);
+}
+:SBC "A",Dp is op=0xa4; Dp {
+  local olda:1 = A;
+  local value:1 = *:1 Dp;
+  local borrow:1 = (CF == 0);
+  A = A - value - borrow;
+  flags_sbc8(olda, value, borrow, A);
+}
+:AND "A",Dp is op=0x24; Dp { A = A & *:1 Dp; flags_nz8(A); }
+:EOR "A",Dp is op=0x44; Dp { A = A ^ *:1 Dp; flags_nz8(A); }
+:OR "A",Dp is op=0x04; Dp { A = A | *:1 Dp; flags_nz8(A); }
+:CMP "A",Dp is op=0x64; Dp {
+  local value:1 = *:1 Dp;
+  local result:1 = A - value;
+  CF = (A >= value);
   flags_nz8(result);
 }
 :PUSH "A" is op=0x2d { push8(A); }
