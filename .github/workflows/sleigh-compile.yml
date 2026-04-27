@@ -108,3 +108,17 @@ jobs:
             -scriptPath scripts \
             -postScript ProcessorSmoke.java SPC700:LE:16:default "${expected[@]}" \
             -deleteProject
+
+          printf '\xE8\x12\xCD\x02\x8D\x03\xE6\xBF\xE4\x10\xF4\x11\xE5\x00\x20\xF5\x02\x20\xF6\x04\x20\xE7\x12\xF7\x13\xF8\x10\xF9\x11\xE9\x00\x20\xEB\x10\xFB\x11\xEC\x00\x20\xC6\xAF\xC4\x10\xD4\x11\xC5\x00\x20\xD5\x02\x20\xD6\x04\x20\xC7\x12\xD7\x13\xD8\x10\xD9\x11\xC9\x00\x20\xCB\x10\xDB\x11\xCC\x00\x20\xFA\x10\x11\x8F\x01\x11\x00' > smoke/mov.bin
+          mov_expected=()
+          for _ in $(seq 1 35); do mov_expected+=(MOV); done
+          mov_expected+=(NOP)
+          ghidra/support/analyzeHeadless "$PWD" smoke-mov-proj \
+            -import smoke/mov.bin \
+            -processor SPC700:LE:16:default \
+            -cspec default \
+            -loader BinaryLoader \
+            -loader-baseAddr 0x0000 \
+            -scriptPath scripts \
+            -postScript ProcessorSmoke.java SPC700:LE:16:default "${mov_expected[@]}" \
+            -deleteProject
