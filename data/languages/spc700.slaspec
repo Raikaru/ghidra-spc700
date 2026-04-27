@@ -140,6 +140,14 @@ Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
 DpSrc: <$src8 is src8 { local addr:2 = 0; addr = src8; export *:2 addr; }
 DpDst: <$dst8 is dst8 { local addr:2 = 0; addr = dst8; export *:2 addr; }
 ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
+DpBit0: <$imm8 ".0" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit1: <$imm8 ".1" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit2: <$imm8 ".2" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit3: <$imm8 ".3" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit4: <$imm8 ".4" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit5: <$imm8 ".5" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit6: <$imm8 ".6" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
 
 :NOP is op=0x00 { }
 
@@ -152,6 +160,28 @@ ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 :BCC RelTarget is op=0x90; RelTarget { if (CF == 0) goto RelTarget; }
 :BVS RelTarget is op=0x70; RelTarget { if (VF != 0) goto RelTarget; }
 :BVC RelTarget is op=0x50; RelTarget { if (VF == 0) goto RelTarget; }
+
+:BBS DpBit0,RelTarget is op=0x03; DpBit0; RelTarget { if ((DpBit0 & 0x01) != 0) goto RelTarget; }
+:BBC DpBit0,RelTarget is op=0x13; DpBit0; RelTarget { if ((DpBit0 & 0x01) == 0) goto RelTarget; }
+:BBS DpBit1,RelTarget is op=0x23; DpBit1; RelTarget { if ((DpBit1 & 0x02) != 0) goto RelTarget; }
+:BBC DpBit1,RelTarget is op=0x33; DpBit1; RelTarget { if ((DpBit1 & 0x02) == 0) goto RelTarget; }
+:BBS DpBit2,RelTarget is op=0x43; DpBit2; RelTarget { if ((DpBit2 & 0x04) != 0) goto RelTarget; }
+:BBC DpBit2,RelTarget is op=0x53; DpBit2; RelTarget { if ((DpBit2 & 0x04) == 0) goto RelTarget; }
+:BBS DpBit3,RelTarget is op=0x63; DpBit3; RelTarget { if ((DpBit3 & 0x08) != 0) goto RelTarget; }
+:BBC DpBit3,RelTarget is op=0x73; DpBit3; RelTarget { if ((DpBit3 & 0x08) == 0) goto RelTarget; }
+:BBS DpBit4,RelTarget is op=0x83; DpBit4; RelTarget { if ((DpBit4 & 0x10) != 0) goto RelTarget; }
+:BBC DpBit4,RelTarget is op=0x93; DpBit4; RelTarget { if ((DpBit4 & 0x10) == 0) goto RelTarget; }
+:BBS DpBit5,RelTarget is op=0xa3; DpBit5; RelTarget { if ((DpBit5 & 0x20) != 0) goto RelTarget; }
+:BBC DpBit5,RelTarget is op=0xb3; DpBit5; RelTarget { if ((DpBit5 & 0x20) == 0) goto RelTarget; }
+:BBS DpBit6,RelTarget is op=0xc3; DpBit6; RelTarget { if ((DpBit6 & 0x40) != 0) goto RelTarget; }
+:BBC DpBit6,RelTarget is op=0xd3; DpBit6; RelTarget { if ((DpBit6 & 0x40) == 0) goto RelTarget; }
+:BBS DpBit7,RelTarget is op=0xe3; DpBit7; RelTarget { if ((DpBit7 & 0x80) != 0) goto RelTarget; }
+:BBC DpBit7,RelTarget is op=0xf3; DpBit7; RelTarget { if ((DpBit7 & 0x80) == 0) goto RelTarget; }
+
+:CBNE Dp,RelTarget is op=0x2e; Dp; RelTarget { if (A != *:1 Dp) goto RelTarget; }
+:CBNE DpX,RelTarget is op=0xde; DpX; RelTarget { if (A != *:1 DpX) goto RelTarget; }
+:DBNZ Dp,RelTarget is op=0x6e; Dp; RelTarget { *:1 Dp = *:1 Dp - 1; if (*:1 Dp != 0) goto RelTarget; }
+:DBNZ "Y",RelTarget is op=0xfe; RelTarget { Y = Y - 1; if (Y != 0) goto RelTarget; }
 
 :CALL Abs is op=0x3f; Abs { call Abs; }
 :JMP Abs is op=0x5f; Abs { goto Abs; }
@@ -353,3 +383,20 @@ ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 :CLRV is op=0xe0 { VF = 0; HF = 0; pack_psw(); }
 :EI is op=0xa0 { IF = 1; pack_psw(); }
 :DI is op=0xc0 { IF = 0; pack_psw(); }
+
+:SET1 DpBit0 is op=0x02; DpBit0 { DpBit0 = DpBit0 | 0x01; }
+:CLR1 DpBit0 is op=0x12; DpBit0 { DpBit0 = DpBit0 & 0xfe; }
+:SET1 DpBit1 is op=0x22; DpBit1 { DpBit1 = DpBit1 | 0x02; }
+:CLR1 DpBit1 is op=0x32; DpBit1 { DpBit1 = DpBit1 & 0xfd; }
+:SET1 DpBit2 is op=0x42; DpBit2 { DpBit2 = DpBit2 | 0x04; }
+:CLR1 DpBit2 is op=0x52; DpBit2 { DpBit2 = DpBit2 & 0xfb; }
+:SET1 DpBit3 is op=0x62; DpBit3 { DpBit3 = DpBit3 | 0x08; }
+:CLR1 DpBit3 is op=0x72; DpBit3 { DpBit3 = DpBit3 & 0xf7; }
+:SET1 DpBit4 is op=0x82; DpBit4 { DpBit4 = DpBit4 | 0x10; }
+:CLR1 DpBit4 is op=0x92; DpBit4 { DpBit4 = DpBit4 & 0xef; }
+:SET1 DpBit5 is op=0xa2; DpBit5 { DpBit5 = DpBit5 | 0x20; }
+:CLR1 DpBit5 is op=0xb2; DpBit5 { DpBit5 = DpBit5 & 0xdf; }
+:SET1 DpBit6 is op=0xc2; DpBit6 { DpBit6 = DpBit6 | 0x40; }
+:CLR1 DpBit6 is op=0xd2; DpBit6 { DpBit6 = DpBit6 & 0xbf; }
+:SET1 DpBit7 is op=0xe2; DpBit7 { DpBit7 = DpBit7 | 0x80; }
+:CLR1 DpBit7 is op=0xf2; DpBit7 { DpBit7 = DpBit7 & 0x7f; }
