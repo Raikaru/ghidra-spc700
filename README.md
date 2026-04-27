@@ -27,6 +27,11 @@ data/languages/
 tests/
 ```
 
+## Local analysis workflow
+
+See `docs/APU-WORKFLOW.md` for the payload-safe SPC700 workflow used with the
+SNES loader and 65816 processor stack.
+
 ## Local compile
 
 ```text
