@@ -97,7 +97,7 @@ jobs:
           set -euo pipefail
           mkdir -p smoke scripts
           cp tests/ProcessorSmoke.java scripts/
-          printf '\xE8\x12\x88\x34\x28\x0F\x48\xF0\x08\x01\x68\xF3\xA8\x01\xCD\x34\x8D\x56\x3D\x2F\x01\x00' > smoke/spc700.bin
+          printf '\xE8\x12\x88\x34\x28\x0F\x48\xF0\x08\x01\x68\xF3\xA8\x01\x84\x00\x24\x01\x44\x02\x04\x03\x64\x04\xA4\x05\xCD\x34\x8D\x56\x3D\x2F\x01\x00' > smoke/spc700.bin
           ghidra/support/analyzeHeadless "$PWD" smoke-proj \
             -import smoke/spc700.bin \
             -processor SPC700:LE:16:default \
@@ -105,5 +105,5 @@ jobs:
             -loader BinaryLoader \
             -loader-baseAddr 0x0000 \
             -scriptPath scripts \
-            -postScript ProcessorSmoke.java SPC700:LE:16:default MOV ADC AND EOR OR CMP SBC MOV MOV INC BRA NOP \
+            -postScript ProcessorSmoke.java SPC700:LE:16:default MOV ADC AND EOR OR CMP SBC ADC AND EOR OR CMP SBC MOV MOV INC BRA NOP \
             -deleteProject

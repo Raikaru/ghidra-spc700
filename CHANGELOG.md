@@ -15,4 +15,7 @@ All notable changes to `ghidra-spc700` will be documented in this file.
   control instructions.
 - Immediate accumulator ALU subset for `ADC`, `SBC`, `AND`, `EOR`, `OR`, and
   `CMP`, with opcode-family smoke coverage.
+- Direct-page accumulator ALU forms for `ADC`, `SBC`, `AND`, `EOR`, `OR`,
+  and `CMP`; fixed carry/borrow flag helpers to account for carry input without
+  truncating the operand.
 - Headless smoke script and workflow smoke import for the initial subset.
