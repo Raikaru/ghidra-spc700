@@ -32,6 +32,21 @@ macro flags_nz8(v) {
   NF = (value s< 0);
 }
 
+macro flags_add8(lhs, rhs, result) {
+  local wide:2 = zext(lhs) + zext(rhs);
+  CF = (wide > 0xff);
+  HF = (((lhs ^ rhs ^ result) & 0x10) != 0);
+  VF = (((lhs ^ result) & (rhs ^ result) & 0x80) != 0);
+  flags_nz8(result);
+}
+
+macro flags_sub8(lhs, rhs, result) {
+  CF = (lhs >= rhs);
+  HF = (((lhs ^ rhs ^ result) & 0x10) != 0);
+  VF = (((lhs ^ rhs) & (lhs ^ result) & 0x80) != 0);
+  flags_nz8(result);
+}
+
 macro stack_addr(out) {
   out = 0x0100 | zext(SP);
 }
@@ -88,6 +103,28 @@ Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
 :MOV "X","SP" is op=0x9d { X = SP; flags_nz8(X); }
 :MOV "SP","X" is op=0xbd { SP = X; }
 
+
+:ADC "A",Imm8 is op=0x88; Imm8 {
+  local olda:1 = A;
+  local rhs:1 = Imm8 + CF;
+  A = A + rhs;
+  flags_add8(olda, rhs, A);
+}
+:SBC "A",Imm8 is op=0xa8; Imm8 {
+  local olda:1 = A;
+  local borrow:1 = (CF == 0);
+  local rhs:1 = Imm8 + borrow;
+  A = A - rhs;
+  flags_sub8(olda, rhs, A);
+}
+:AND "A",Imm8 is op=0x28; Imm8 { A = A & Imm8; flags_nz8(A); }
+:EOR "A",Imm8 is op=0x48; Imm8 { A = A ^ Imm8; flags_nz8(A); }
+:OR "A",Imm8 is op=0x08; Imm8 { A = A | Imm8; flags_nz8(A); }
+:CMP "A",Imm8 is op=0x68; Imm8 {
+  local result:1 = A - Imm8;
+  CF = (A >= Imm8);
+  flags_nz8(result);
+}
 :PUSH "A" is op=0x2d { push8(A); }
 :PUSH "X" is op=0x4d { push8(X); }
 :PUSH "Y" is op=0x6d { push8(Y); }

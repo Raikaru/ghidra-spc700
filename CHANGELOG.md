@@ -13,4 +13,6 @@ All notable changes to `ghidra-spc700` will be documented in this file.
 - Initial instruction subset covering `NOP`, common branches, `CALL` / `JMP` /
   `RET`, immediate/data moves, pushes/pops, register inc/dec, and basic flag
   control instructions.
+- Immediate accumulator ALU subset for `ADC`, `SBC`, `AND`, `EOR`, `OR`, and
+  `CMP`, with opcode-family smoke coverage.
 - Headless smoke script and workflow smoke import for the initial subset.
