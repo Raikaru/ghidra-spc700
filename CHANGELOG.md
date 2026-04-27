@@ -18,4 +18,6 @@ All notable changes to `ghidra-spc700` will be documented in this file.
 - Direct-page accumulator ALU forms for `ADC`, `SBC`, `AND`, `EOR`, `OR`,
   and `CMP`; fixed carry/borrow flag helpers to account for carry input without
   truncating the operand.
+- Remaining accumulator ALU addressing modes plus `(X),(Y)`, `dp,dp`, and
+  `dp,#imm` memory-to-memory forms for the same ALU families.
 - Headless smoke script and workflow smoke import for the initial subset.

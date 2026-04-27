@@ -24,6 +24,8 @@ define token data8 (8)
 
 define token data16 (16)
   imm16 = (0,15)
+  src8 = (0,7)
+  dst8 = (8,15)
 ;
 
 macro flags_nz8(v) {
@@ -48,6 +50,26 @@ macro flags_sbc8(lhs, rhs, borrow, result) {
   flags_nz8(result);
 }
 
+macro adc_a(value) {
+  local olda:1 = A;
+  local carry:1 = CF;
+  A = A + value + carry;
+  flags_adc8(olda, value, carry, A);
+}
+
+macro sbc_a(value) {
+  local olda:1 = A;
+  local borrow:1 = (CF == 0);
+  A = A - value - borrow;
+  flags_sbc8(olda, value, borrow, A);
+}
+
+macro cmp8(lhs, rhs) {
+  local result:1 = lhs - rhs;
+  CF = (lhs >= rhs);
+  flags_nz8(result);
+}
+
 macro stack_addr(out) {
   out = 0x0100 | zext(SP);
 }
@@ -68,8 +90,16 @@ macro pop8(out) {
 
 RelTarget: $target is rel8 [ target = (inst_next + rel8) & 0xffff; ] { export *:2 target; }
 Abs: !$imm16 is imm16 { export *:2 imm16; }
+AbsX: !$imm16 "+X" is imm16 { local addr:2 = imm16 + zext(X); export *:2 addr; }
+AbsY: !$imm16 "+Y" is imm16 { local addr:2 = imm16 + zext(Y); export *:2 addr; }
 Dp: <$imm8 is imm8 { local addr:2 = 0; addr = imm8; export *:2 addr; }
+DpX: <$imm8 "+X" is imm8 { local low:1 = imm8 + X; local addr:2 = zext(low); export *:2 addr; }
+DpXInd: [$imm8 "+X"] is imm8 { local ptrLo:1 = imm8 + X; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = zext(lo) | (zext(hi) << 8); export *:2 addr; }
+DpIndY: [$imm8] "+Y" is imm8 { local ptrLo:1 = imm8; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = (zext(lo) | (zext(hi) << 8)) + zext(Y); export *:2 addr; }
 Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
+DpSrc: <$src8 is src8 { local addr:2 = 0; addr = src8; export *:2 addr; }
+DpDst: <$dst8 is dst8 { local addr:2 = 0; addr = dst8; export *:2 addr; }
+ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 
 :NOP is op=0x00 { }
 
@@ -105,49 +135,90 @@ Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
 :MOV "SP","X" is op=0xbd { SP = X; }
 
 
-:ADC "A",Imm8 is op=0x88; Imm8 {
-  local olda:1 = A;
-  local carry:1 = CF;
-  A = A + Imm8 + carry;
-  flags_adc8(olda, Imm8, carry, A);
-}
-:SBC "A",Imm8 is op=0xa8; Imm8 {
-  local olda:1 = A;
-  local borrow:1 = (CF == 0);
-  A = A - Imm8 - borrow;
-  flags_sbc8(olda, Imm8, borrow, A);
-}
+:ADC "A",Imm8 is op=0x88; Imm8 { adc_a(Imm8); }
+:SBC "A",Imm8 is op=0xa8; Imm8 { sbc_a(Imm8); }
 :AND "A",Imm8 is op=0x28; Imm8 { A = A & Imm8; flags_nz8(A); }
 :EOR "A",Imm8 is op=0x48; Imm8 { A = A ^ Imm8; flags_nz8(A); }
 :OR "A",Imm8 is op=0x08; Imm8 { A = A | Imm8; flags_nz8(A); }
-:CMP "A",Imm8 is op=0x68; Imm8 {
-  local result:1 = A - Imm8;
-  CF = (A >= Imm8);
-  flags_nz8(result);
-}
-:ADC "A",Dp is op=0x84; Dp {
-  local olda:1 = A;
-  local value:1 = *:1 Dp;
-  local carry:1 = CF;
-  A = A + value + carry;
-  flags_adc8(olda, value, carry, A);
-}
-:SBC "A",Dp is op=0xa4; Dp {
-  local olda:1 = A;
-  local value:1 = *:1 Dp;
-  local borrow:1 = (CF == 0);
-  A = A - value - borrow;
-  flags_sbc8(olda, value, borrow, A);
-}
+:CMP "A",Imm8 is op=0x68; Imm8 { cmp8(A, Imm8); }
+
+:ADC "A","(X)" is op=0x86 { local addr:2 = zext(X); adc_a(*:1 addr); }
+:ADC "A",Dp is op=0x84; Dp { adc_a(*:1 Dp); }
+:ADC "A",DpX is op=0x94; DpX { adc_a(*:1 DpX); }
+:ADC "A",Abs is op=0x85; Abs { adc_a(*:1 Abs); }
+:ADC "A",AbsX is op=0x95; AbsX { adc_a(*:1 AbsX); }
+:ADC "A",AbsY is op=0x96; AbsY { adc_a(*:1 AbsY); }
+:ADC "A",DpXInd is op=0x87; DpXInd { adc_a(*:1 DpXInd); }
+:ADC "A",DpIndY is op=0x97; DpIndY { adc_a(*:1 DpIndY); }
+
+:SBC "A","(X)" is op=0xa6 { local addr:2 = zext(X); sbc_a(*:1 addr); }
+:SBC "A",Dp is op=0xa4; Dp { sbc_a(*:1 Dp); }
+:SBC "A",DpX is op=0xb4; DpX { sbc_a(*:1 DpX); }
+:SBC "A",Abs is op=0xa5; Abs { sbc_a(*:1 Abs); }
+:SBC "A",AbsX is op=0xb5; AbsX { sbc_a(*:1 AbsX); }
+:SBC "A",AbsY is op=0xb6; AbsY { sbc_a(*:1 AbsY); }
+:SBC "A",DpXInd is op=0xa7; DpXInd { sbc_a(*:1 DpXInd); }
+:SBC "A",DpIndY is op=0xb7; DpIndY { sbc_a(*:1 DpIndY); }
+
+:AND "A","(X)" is op=0x26 { local addr:2 = zext(X); A = A & *:1 addr; flags_nz8(A); }
 :AND "A",Dp is op=0x24; Dp { A = A & *:1 Dp; flags_nz8(A); }
+:AND "A",DpX is op=0x34; DpX { A = A & *:1 DpX; flags_nz8(A); }
+:AND "A",Abs is op=0x25; Abs { A = A & *:1 Abs; flags_nz8(A); }
+:AND "A",AbsX is op=0x35; AbsX { A = A & *:1 AbsX; flags_nz8(A); }
+:AND "A",AbsY is op=0x36; AbsY { A = A & *:1 AbsY; flags_nz8(A); }
+:AND "A",DpXInd is op=0x27; DpXInd { A = A & *:1 DpXInd; flags_nz8(A); }
+:AND "A",DpIndY is op=0x37; DpIndY { A = A & *:1 DpIndY; flags_nz8(A); }
+
+:EOR "A","(X)" is op=0x46 { local addr:2 = zext(X); A = A ^ *:1 addr; flags_nz8(A); }
 :EOR "A",Dp is op=0x44; Dp { A = A ^ *:1 Dp; flags_nz8(A); }
+:EOR "A",DpX is op=0x54; DpX { A = A ^ *:1 DpX; flags_nz8(A); }
+:EOR "A",Abs is op=0x45; Abs { A = A ^ *:1 Abs; flags_nz8(A); }
+:EOR "A",AbsX is op=0x55; AbsX { A = A ^ *:1 AbsX; flags_nz8(A); }
+:EOR "A",AbsY is op=0x56; AbsY { A = A ^ *:1 AbsY; flags_nz8(A); }
+:EOR "A",DpXInd is op=0x47; DpXInd { A = A ^ *:1 DpXInd; flags_nz8(A); }
+:EOR "A",DpIndY is op=0x57; DpIndY { A = A ^ *:1 DpIndY; flags_nz8(A); }
+
+:OR "A","(X)" is op=0x06 { local addr:2 = zext(X); A = A | *:1 addr; flags_nz8(A); }
 :OR "A",Dp is op=0x04; Dp { A = A | *:1 Dp; flags_nz8(A); }
-:CMP "A",Dp is op=0x64; Dp {
-  local value:1 = *:1 Dp;
-  local result:1 = A - value;
-  CF = (A >= value);
-  flags_nz8(result);
-}
+:OR "A",DpX is op=0x14; DpX { A = A | *:1 DpX; flags_nz8(A); }
+:OR "A",Abs is op=0x05; Abs { A = A | *:1 Abs; flags_nz8(A); }
+:OR "A",AbsX is op=0x15; AbsX { A = A | *:1 AbsX; flags_nz8(A); }
+:OR "A",AbsY is op=0x16; AbsY { A = A | *:1 AbsY; flags_nz8(A); }
+:OR "A",DpXInd is op=0x07; DpXInd { A = A | *:1 DpXInd; flags_nz8(A); }
+:OR "A",DpIndY is op=0x17; DpIndY { A = A | *:1 DpIndY; flags_nz8(A); }
+
+:CMP "A","(X)" is op=0x66 { local addr:2 = zext(X); cmp8(A, *:1 addr); }
+:CMP "A",Dp is op=0x64; Dp { cmp8(A, *:1 Dp); }
+:CMP "A",DpX is op=0x74; DpX { cmp8(A, *:1 DpX); }
+:CMP "A",Abs is op=0x65; Abs { cmp8(A, *:1 Abs); }
+:CMP "A",AbsX is op=0x75; AbsX { cmp8(A, *:1 AbsX); }
+:CMP "A",AbsY is op=0x76; AbsY { cmp8(A, *:1 AbsY); }
+:CMP "A",DpXInd is op=0x67; DpXInd { cmp8(A, *:1 DpXInd); }
+:CMP "A",DpIndY is op=0x77; DpIndY { cmp8(A, *:1 DpIndY); }
+
+:ADC "(X)","(Y)" is op=0x99 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); local dst:1 = *:1 dstAddr; local src:1 = *:1 srcAddr; local carry:1 = CF; *:1 dstAddr = dst + src + carry; flags_adc8(dst, src, carry, *:1 dstAddr); }
+:ADC DpDst,DpSrc is op=0x89; DpSrc & DpDst { local dst:1 = *:1 DpDst; local src:1 = *:1 DpSrc; local carry:1 = CF; *:1 DpDst = dst + src + carry; flags_adc8(dst, src, carry, *:1 DpDst); }
+:ADC DpDst,ImmSrc is op=0x98; ImmSrc & DpDst { local dst:1 = *:1 DpDst; local carry:1 = CF; *:1 DpDst = dst + ImmSrc + carry; flags_adc8(dst, ImmSrc, carry, *:1 DpDst); }
+
+:SBC "(X)","(Y)" is op=0xb9 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); local dst:1 = *:1 dstAddr; local src:1 = *:1 srcAddr; local borrow:1 = (CF == 0); *:1 dstAddr = dst - src - borrow; flags_sbc8(dst, src, borrow, *:1 dstAddr); }
+:SBC DpDst,DpSrc is op=0xa9; DpSrc & DpDst { local dst:1 = *:1 DpDst; local src:1 = *:1 DpSrc; local borrow:1 = (CF == 0); *:1 DpDst = dst - src - borrow; flags_sbc8(dst, src, borrow, *:1 DpDst); }
+:SBC DpDst,ImmSrc is op=0xb8; ImmSrc & DpDst { local dst:1 = *:1 DpDst; local borrow:1 = (CF == 0); *:1 DpDst = dst - ImmSrc - borrow; flags_sbc8(dst, ImmSrc, borrow, *:1 DpDst); }
+
+:AND "(X)","(Y)" is op=0x39 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); *:1 dstAddr = *:1 dstAddr & *:1 srcAddr; flags_nz8(*:1 dstAddr); }
+:AND DpDst,DpSrc is op=0x29; DpSrc & DpDst { *:1 DpDst = *:1 DpDst & *:1 DpSrc; flags_nz8(*:1 DpDst); }
+:AND DpDst,ImmSrc is op=0x38; ImmSrc & DpDst { *:1 DpDst = *:1 DpDst & ImmSrc; flags_nz8(*:1 DpDst); }
+
+:EOR "(X)","(Y)" is op=0x59 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); *:1 dstAddr = *:1 dstAddr ^ *:1 srcAddr; flags_nz8(*:1 dstAddr); }
+:EOR DpDst,DpSrc is op=0x49; DpSrc & DpDst { *:1 DpDst = *:1 DpDst ^ *:1 DpSrc; flags_nz8(*:1 DpDst); }
+:EOR DpDst,ImmSrc is op=0x58; ImmSrc & DpDst { *:1 DpDst = *:1 DpDst ^ ImmSrc; flags_nz8(*:1 DpDst); }
+
+:OR "(X)","(Y)" is op=0x19 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); *:1 dstAddr = *:1 dstAddr | *:1 srcAddr; flags_nz8(*:1 dstAddr); }
+:OR DpDst,DpSrc is op=0x09; DpSrc & DpDst { *:1 DpDst = *:1 DpDst | *:1 DpSrc; flags_nz8(*:1 DpDst); }
+:OR DpDst,ImmSrc is op=0x18; ImmSrc & DpDst { *:1 DpDst = *:1 DpDst | ImmSrc; flags_nz8(*:1 DpDst); }
+
+:CMP "(X)","(Y)" is op=0x79 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); cmp8(*:1 dstAddr, *:1 srcAddr); }
+:CMP DpDst,DpSrc is op=0x69; DpSrc & DpDst { cmp8(*:1 DpDst, *:1 DpSrc); }
+:CMP DpDst,ImmSrc is op=0x78; ImmSrc & DpDst { cmp8(*:1 DpDst, ImmSrc); }
 :PUSH "A" is op=0x2d { push8(A); }
 :PUSH "X" is op=0x4d { push8(X); }
 :PUSH "Y" is op=0x6d { push8(Y); }
