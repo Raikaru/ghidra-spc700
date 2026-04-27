@@ -134,3 +134,15 @@ jobs:
             -scriptPath scripts \
             -postScript ProcessorSmoke.java SPC700:LE:16:default "${arith_expected[@]}" \
             -deleteProject
+
+          printf '\x02\x10\x12\x10\x22\x11\x32\x11\x42\x12\x52\x12\x62\x13\x72\x13\x82\x14\x92\x14\xA2\x15\xB2\x15\xC2\x16\xD2\x16\xE2\x17\xF2\x17\x03\x20\x01\x13\x20\x01\x23\x21\x01\x33\x21\x01\x43\x22\x01\x53\x22\x01\x63\x23\x01\x73\x23\x01\x83\x24\x01\x93\x24\x01\xA3\x25\x01\xB3\x25\x01\xC3\x26\x01\xD3\x26\x01\xE3\x27\x01\xF3\x27\x01\x2E\x30\x01\xDE\x31\x01\x6E\x32\x01\xFE\x01\x00' > smoke/bitbranch.bin
+          bitbranch_expected=(SET1 CLR1 SET1 CLR1 SET1 CLR1 SET1 CLR1 SET1 CLR1 SET1 CLR1 SET1 CLR1 SET1 CLR1 BBS BBC BBS BBC BBS BBC BBS BBC BBS BBC BBS BBC BBS BBC BBS BBC CBNE CBNE DBNZ DBNZ NOP)
+          ghidra/support/analyzeHeadless "$PWD" smoke-bitbranch-proj \
+            -import smoke/bitbranch.bin \
+            -processor SPC700:LE:16:default \
+            -cspec default \
+            -loader BinaryLoader \
+            -loader-baseAddr 0x0000 \
+            -scriptPath scripts \
+            -postScript ProcessorSmoke.java SPC700:LE:16:default "${bitbranch_expected[@]}" \
+            -deleteProject

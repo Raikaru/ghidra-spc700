@@ -27,4 +27,6 @@ All notable changes to `ghidra-spc700` will be documented in this file.
   coverage.
 - Shift/rotate memory forms, direct/absolute `INC`/`DEC`, `CMP X/Y`, and
   `ADDW`/`SUBW`/`CMPW` word operations, with smoke coverage.
+- Direct-page bit set/clear operations and bit/compare/decrement branch forms
+  (`SET1`, `CLR1`, `BBS`, `BBC`, `CBNE`, `DBNZ`), with smoke coverage.
 - Headless smoke script and workflow smoke import for the initial subset.
