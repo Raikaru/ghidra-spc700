@@ -28,10 +28,26 @@ define token data16 (16)
   dst8 = (8,15)
 ;
 
+macro pack_psw() {
+  PSW = (NF << 7) | (VF << 6) | (PF << 5) | (BF << 4) | (HF << 3) | (IF << 2) | (ZF << 1) | CF;
+}
+
+macro unpack_psw() {
+  NF = (PSW >> 7) & 1;
+  VF = (PSW >> 6) & 1;
+  PF = (PSW >> 5) & 1;
+  BF = (PSW >> 4) & 1;
+  HF = (PSW >> 3) & 1;
+  IF = (PSW >> 2) & 1;
+  ZF = (PSW >> 1) & 1;
+  CF = PSW & 1;
+}
+
 macro flags_nz8(v) {
   local value:1 = v;
   ZF = (value == 0);
   NF = (value s< 0);
+  pack_psw();
 }
 
 macro flags_adc8(lhs, rhs, carry, result) {
@@ -222,11 +238,11 @@ ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 :PUSH "A" is op=0x2d { push8(A); }
 :PUSH "X" is op=0x4d { push8(X); }
 :PUSH "Y" is op=0x6d { push8(Y); }
-:PUSH "PSW" is op=0x0d { push8(PSW); }
+:PUSH "PSW" is op=0x0d { pack_psw(); push8(PSW); }
 :POP "A" is op=0xae { pop8(A); flags_nz8(A); }
 :POP "X" is op=0xce { pop8(X); flags_nz8(X); }
 :POP "Y" is op=0xee { pop8(Y); flags_nz8(Y); }
-:POP "PSW" is op=0x8e { pop8(PSW); }
+:POP "PSW" is op=0x8e { pop8(PSW); unpack_psw(); }
 
 :INC "A" is op=0xbc { A = A + 1; flags_nz8(A); }
 :INC "X" is op=0x3d { X = X + 1; flags_nz8(X); }
@@ -236,10 +252,10 @@ ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 :DEC "Y" is op=0xdc { Y = Y - 1; flags_nz8(Y); }
 
 
-:CLRC is op=0x60 { CF = 0; }
-:SETC is op=0x80 { CF = 1; }
-:CLRP is op=0x20 { PF = 0; }
-:SETP is op=0x40 { PF = 1; }
-:CLRV is op=0xe0 { VF = 0; HF = 0; }
-:EI is op=0xa0 { IF = 1; }
-:DI is op=0xc0 { IF = 0; }
+:CLRC is op=0x60 { CF = 0; pack_psw(); }
+:SETC is op=0x80 { CF = 1; pack_psw(); }
+:CLRP is op=0x20 { PF = 0; pack_psw(); }
+:SETP is op=0x40 { PF = 1; pack_psw(); }
+:CLRV is op=0xe0 { VF = 0; HF = 0; pack_psw(); }
+:EI is op=0xa0 { IF = 1; pack_psw(); }
+:DI is op=0xc0 { IF = 0; pack_psw(); }

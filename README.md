@@ -33,8 +33,7 @@ tests/
 
 ## Next implementation targets
 
-1. Complete register/flag semantics and PSW packing/unpacking.
-2. Add bit, multiplication/division, and word operations.
-3. Expand load/store addressing modes and control-flow variants.
-4. Add vector/default-symbol support for SPC dumps.
-5. Expand headless smoke tests into opcode-family coverage.
+1. Add bit, multiplication/division, and word operations.
+2. Expand load/store addressing modes and control-flow variants.
+3. Add vector/default-symbol support for SPC dumps.
+4. Expand headless smoke tests into semantic opcode-family coverage.
