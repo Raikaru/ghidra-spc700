@@ -6,3 +6,5 @@ java-classes/
 smoke/
 smoke-proj/
 smoke-proj.gpr
+ghidra-spc700-*.zip
+ghidra-spc700-*.zip.sha256
