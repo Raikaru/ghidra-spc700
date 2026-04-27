@@ -7,7 +7,7 @@ Sony SPC700 processor module scaffold for Ghidra.
 This repository currently contains an early but compiling SPC700 language
 implementation. It is not complete, but it has enough structure for Ghidra to
 register the language and disassemble a small core subset: `NOP`, common
-branches, `CALL`/`JMP`/`RET`, immediate/data moves, accumulator ALU
+branches, `CALL`/`JMP`/`RET`, immediate/data/register moves, accumulator ALU
 addressing modes plus memory-to-memory ALU forms for `ADC`/`SBC`/`AND`/`EOR`/
 `OR`/`CMP`, pushes/pops, register increments/decrements, and basic flag-control
 instructions.

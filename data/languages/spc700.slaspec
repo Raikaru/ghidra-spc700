@@ -110,6 +110,7 @@ AbsX: !$imm16 "+X" is imm16 { local addr:2 = imm16 + zext(X); export *:2 addr; }
 AbsY: !$imm16 "+Y" is imm16 { local addr:2 = imm16 + zext(Y); export *:2 addr; }
 Dp: <$imm8 is imm8 { local addr:2 = 0; addr = imm8; export *:2 addr; }
 DpX: <$imm8 "+X" is imm8 { local low:1 = imm8 + X; local addr:2 = zext(low); export *:2 addr; }
+DpY: <$imm8 "+Y" is imm8 { local low:1 = imm8 + Y; local addr:2 = zext(low); export *:2 addr; }
 DpXInd: [$imm8 "+X"] is imm8 { local ptrLo:1 = imm8 + X; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = zext(lo) | (zext(hi) << 8); export *:2 addr; }
 DpIndY: [$imm8] "+Y" is imm8 { local ptrLo:1 = imm8; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = (zext(lo) | (zext(hi) << 8)) + zext(Y); export *:2 addr; }
 Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
@@ -138,10 +139,42 @@ ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 :MOV "X",Imm8 is op=0xcd; Imm8 { X = Imm8; flags_nz8(X); }
 :MOV "Y",Imm8 is op=0x8d; Imm8 { Y = Imm8; flags_nz8(Y); }
 
+:MOV "A","(X)" is op=0xe6 { local addr:2 = zext(X); A = *:1 addr; flags_nz8(A); }
+:MOV "A","(X)+" is op=0xbf { local addr:2 = zext(X); A = *:1 addr; X = X + 1; flags_nz8(A); }
 :MOV "A",Dp is op=0xe4; Dp { A = *:1 Dp; flags_nz8(A); }
+:MOV "A",DpX is op=0xf4; DpX { A = *:1 DpX; flags_nz8(A); }
 :MOV "A",Abs is op=0xe5; Abs { A = *:1 Abs; flags_nz8(A); }
+:MOV "A",AbsX is op=0xf5; AbsX { A = *:1 AbsX; flags_nz8(A); }
+:MOV "A",AbsY is op=0xf6; AbsY { A = *:1 AbsY; flags_nz8(A); }
+:MOV "A",DpXInd is op=0xe7; DpXInd { A = *:1 DpXInd; flags_nz8(A); }
+:MOV "A",DpIndY is op=0xf7; DpIndY { A = *:1 DpIndY; flags_nz8(A); }
+
+:MOV "X",Dp is op=0xf8; Dp { X = *:1 Dp; flags_nz8(X); }
+:MOV "X",DpY is op=0xf9; DpY { X = *:1 DpY; flags_nz8(X); }
+:MOV "X",Abs is op=0xe9; Abs { X = *:1 Abs; flags_nz8(X); }
+:MOV "Y",Dp is op=0xeb; Dp { Y = *:1 Dp; flags_nz8(Y); }
+:MOV "Y",DpX is op=0xfb; DpX { Y = *:1 DpX; flags_nz8(Y); }
+:MOV "Y",Abs is op=0xec; Abs { Y = *:1 Abs; flags_nz8(Y); }
+
+:MOV "(X)","A" is op=0xc6 { local addr:2 = zext(X); *:1 addr = A; }
+:MOV "(X)+","A" is op=0xaf { local addr:2 = zext(X); *:1 addr = A; X = X + 1; }
 :MOV Dp,"A" is op=0xc4; Dp { *:1 Dp = A; }
+:MOV DpX,"A" is op=0xd4; DpX { *:1 DpX = A; }
 :MOV Abs,"A" is op=0xc5; Abs { *:1 Abs = A; }
+:MOV AbsX,"A" is op=0xd5; AbsX { *:1 AbsX = A; }
+:MOV AbsY,"A" is op=0xd6; AbsY { *:1 AbsY = A; }
+:MOV DpXInd,"A" is op=0xc7; DpXInd { *:1 DpXInd = A; }
+:MOV DpIndY,"A" is op=0xd7; DpIndY { *:1 DpIndY = A; }
+
+:MOV Dp,"X" is op=0xd8; Dp { *:1 Dp = X; }
+:MOV DpY,"X" is op=0xd9; DpY { *:1 DpY = X; }
+:MOV Abs,"X" is op=0xc9; Abs { *:1 Abs = X; }
+:MOV Dp,"Y" is op=0xcb; Dp { *:1 Dp = Y; }
+:MOV DpX,"Y" is op=0xdb; DpX { *:1 DpX = Y; }
+:MOV Abs,"Y" is op=0xcc; Abs { *:1 Abs = Y; }
+
+:MOV DpDst,DpSrc is op=0xfa; DpSrc & DpDst { *:1 DpDst = *:1 DpSrc; }
+:MOV DpDst,ImmSrc is op=0x8f; ImmSrc & DpDst { *:1 DpDst = ImmSrc; }
 
 :MOV "A","X" is op=0x7d { A = X; flags_nz8(A); }
 :MOV "A","Y" is op=0xdd { A = Y; flags_nz8(A); }

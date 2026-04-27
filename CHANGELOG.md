@@ -22,4 +22,7 @@ All notable changes to `ghidra-spc700` will be documented in this file.
   `dp,#imm` memory-to-memory forms for the same ALU families.
 - PSW pack/unpack helpers now keep `PSW` coherent with individual flags for
   implemented flag-affecting instructions and `PUSH`/`POP PSW`.
+- Completed SPC700 `MOV` load/store addressing forms for accumulator, index
+  registers, memory destinations, `(X)+`, `dp,dp`, and `dp,#imm`, with CI smoke
+  coverage.
 - Headless smoke script and workflow smoke import for the initial subset.
