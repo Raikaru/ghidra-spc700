@@ -25,4 +25,6 @@ All notable changes to `ghidra-spc700` will be documented in this file.
 - Completed SPC700 `MOV` load/store addressing forms for accumulator, index
   registers, memory destinations, `(X)+`, `dp,dp`, and `dp,#imm`, with CI smoke
   coverage.
+- Shift/rotate memory forms, direct/absolute `INC`/`DEC`, `CMP X/Y`, and
+  `ADDW`/`SUBW`/`CMPW` word operations, with smoke coverage.
 - Headless smoke script and workflow smoke import for the initial subset.

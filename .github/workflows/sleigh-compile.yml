@@ -122,3 +122,15 @@ jobs:
             -scriptPath scripts \
             -postScript ProcessorSmoke.java SPC700:LE:16:default "${mov_expected[@]}" \
             -deleteProject
+
+          printf '\x1C\x0B\x10\x1B\x11\x0C\x00\x20\x5C\x4B\x10\x5B\x11\x4C\x00\x20\x3C\x2B\x10\x3B\x11\x2C\x00\x20\x7C\x6B\x10\x7B\x11\x6C\x00\x20\xAB\x10\xBB\x11\xAC\x00\x20\x8B\x10\x9B\x11\x8C\x00\x20\xC8\x01\x3E\x10\x1E\x00\x20\xAD\x01\x7E\x10\x5E\x00\x20\x7A\x10\x9A\x10\x5A\x10\x00' > smoke/arith.bin
+          arith_expected=(ASL ASL ASL ASL LSR LSR LSR LSR ROL ROL ROL ROL ROR ROR ROR ROR INC INC INC DEC DEC DEC CMP CMP CMP CMP CMP CMP ADDW SUBW CMPW NOP)
+          ghidra/support/analyzeHeadless "$PWD" smoke-arith-proj \
+            -import smoke/arith.bin \
+            -processor SPC700:LE:16:default \
+            -cspec default \
+            -loader BinaryLoader \
+            -loader-baseAddr 0x0000 \
+            -scriptPath scripts \
+            -postScript ProcessorSmoke.java SPC700:LE:16:default "${arith_expected[@]}" \
+            -deleteProject

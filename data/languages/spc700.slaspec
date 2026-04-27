@@ -86,6 +86,29 @@ macro cmp8(lhs, rhs) {
   flags_nz8(result);
 }
 
+macro flags_nzc8(v, carry) {
+  CF = carry;
+  flags_nz8(v);
+}
+
+macro flags_nzvch16(lhs, rhs, result) {
+  local wide:4 = zext(lhs) + zext(rhs);
+  CF = (wide > 0xffff);
+  HF = (((lhs ^ rhs ^ result) & 0x1000) != 0);
+  VF = (((lhs ^ result) & (rhs ^ result) & 0x8000) != 0);
+  ZF = (result == 0);
+  NF = (result s< 0);
+  pack_psw();
+}
+
+macro cmp16(lhs, rhs) {
+  local result:2 = lhs - rhs;
+  CF = (lhs >= rhs);
+  ZF = (result == 0);
+  NF = (result s< 0);
+  pack_psw();
+}
+
 macro stack_addr(out) {
   out = 0x0100 | zext(SP);
 }
@@ -268,6 +291,44 @@ ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
 :CMP "(X)","(Y)" is op=0x79 { local dstAddr:2 = zext(X); local srcAddr:2 = zext(Y); cmp8(*:1 dstAddr, *:1 srcAddr); }
 :CMP DpDst,DpSrc is op=0x69; DpSrc & DpDst { cmp8(*:1 DpDst, *:1 DpSrc); }
 :CMP DpDst,ImmSrc is op=0x78; ImmSrc & DpDst { cmp8(*:1 DpDst, ImmSrc); }
+
+:ASL "A" is op=0x1c { local carry:1 = (A >> 7) & 1; A = A << 1; flags_nzc8(A, carry); }
+:ASL Dp is op=0x0b; Dp { local value:1 = *:1 Dp; local carry:1 = (value >> 7) & 1; value = value << 1; *:1 Dp = value; flags_nzc8(value, carry); }
+:ASL DpX is op=0x1b; DpX { local value:1 = *:1 DpX; local carry:1 = (value >> 7) & 1; value = value << 1; *:1 DpX = value; flags_nzc8(value, carry); }
+:ASL Abs is op=0x0c; Abs { local value:1 = *:1 Abs; local carry:1 = (value >> 7) & 1; value = value << 1; *:1 Abs = value; flags_nzc8(value, carry); }
+
+:LSR "A" is op=0x5c { local carry:1 = A & 1; A = A >> 1; flags_nzc8(A, carry); }
+:LSR Dp is op=0x4b; Dp { local value:1 = *:1 Dp; local carry:1 = value & 1; value = value >> 1; *:1 Dp = value; flags_nzc8(value, carry); }
+:LSR DpX is op=0x5b; DpX { local value:1 = *:1 DpX; local carry:1 = value & 1; value = value >> 1; *:1 DpX = value; flags_nzc8(value, carry); }
+:LSR Abs is op=0x4c; Abs { local value:1 = *:1 Abs; local carry:1 = value & 1; value = value >> 1; *:1 Abs = value; flags_nzc8(value, carry); }
+
+:ROL "A" is op=0x3c { local oldCarry:1 = CF; local carry:1 = (A >> 7) & 1; A = (A << 1) | oldCarry; flags_nzc8(A, carry); }
+:ROL Dp is op=0x2b; Dp { local value:1 = *:1 Dp; local oldCarry:1 = CF; local carry:1 = (value >> 7) & 1; value = (value << 1) | oldCarry; *:1 Dp = value; flags_nzc8(value, carry); }
+:ROL DpX is op=0x3b; DpX { local value:1 = *:1 DpX; local oldCarry:1 = CF; local carry:1 = (value >> 7) & 1; value = (value << 1) | oldCarry; *:1 DpX = value; flags_nzc8(value, carry); }
+:ROL Abs is op=0x2c; Abs { local value:1 = *:1 Abs; local oldCarry:1 = CF; local carry:1 = (value >> 7) & 1; value = (value << 1) | oldCarry; *:1 Abs = value; flags_nzc8(value, carry); }
+
+:ROR "A" is op=0x7c { local oldCarry:1 = CF; local carry:1 = A & 1; A = (A >> 1) | (oldCarry << 7); flags_nzc8(A, carry); }
+:ROR Dp is op=0x6b; Dp { local value:1 = *:1 Dp; local oldCarry:1 = CF; local carry:1 = value & 1; value = (value >> 1) | (oldCarry << 7); *:1 Dp = value; flags_nzc8(value, carry); }
+:ROR DpX is op=0x7b; DpX { local value:1 = *:1 DpX; local oldCarry:1 = CF; local carry:1 = value & 1; value = (value >> 1) | (oldCarry << 7); *:1 DpX = value; flags_nzc8(value, carry); }
+:ROR Abs is op=0x6c; Abs { local value:1 = *:1 Abs; local oldCarry:1 = CF; local carry:1 = value & 1; value = (value >> 1) | (oldCarry << 7); *:1 Abs = value; flags_nzc8(value, carry); }
+
+:INC Dp is op=0xab; Dp { local value:1 = *:1 Dp + 1; *:1 Dp = value; flags_nz8(value); }
+:INC DpX is op=0xbb; DpX { local value:1 = *:1 DpX + 1; *:1 DpX = value; flags_nz8(value); }
+:INC Abs is op=0xac; Abs { local value:1 = *:1 Abs + 1; *:1 Abs = value; flags_nz8(value); }
+:DEC Dp is op=0x8b; Dp { local value:1 = *:1 Dp - 1; *:1 Dp = value; flags_nz8(value); }
+:DEC DpX is op=0x9b; DpX { local value:1 = *:1 DpX - 1; *:1 DpX = value; flags_nz8(value); }
+:DEC Abs is op=0x8c; Abs { local value:1 = *:1 Abs - 1; *:1 Abs = value; flags_nz8(value); }
+
+:CMP "X",Imm8 is op=0xc8; Imm8 { cmp8(X, Imm8); }
+:CMP "X",Dp is op=0x3e; Dp { cmp8(X, *:1 Dp); }
+:CMP "X",Abs is op=0x1e; Abs { cmp8(X, *:1 Abs); }
+:CMP "Y",Imm8 is op=0xad; Imm8 { cmp8(Y, Imm8); }
+:CMP "Y",Dp is op=0x7e; Dp { cmp8(Y, *:1 Dp); }
+:CMP "Y",Abs is op=0x5e; Abs { cmp8(Y, *:1 Abs); }
+
+:ADDW "YA",Dp is op=0x7a; Dp { local ya:2 = (zext(Y) << 8) | zext(A); local rhs:2 = *:2 Dp; local result:2 = ya + rhs; A = result:1; Y = result(1); flags_nzvch16(ya, rhs, result); }
+:SUBW "YA",Dp is op=0x9a; Dp { local ya:2 = (zext(Y) << 8) | zext(A); local rhs:2 = *:2 Dp; local result:2 = ya - rhs; A = result:1; Y = result(1); cmp16(ya, rhs); }
+:CMPW "YA",Dp is op=0x5a; Dp { local ya:2 = (zext(Y) << 8) | zext(A); cmp16(ya, *:2 Dp); }
 :PUSH "A" is op=0x2d { push8(A); }
 :PUSH "X" is op=0x4d { push8(X); }
 :PUSH "Y" is op=0x6d { push8(Y); }
