@@ -17,6 +17,10 @@ public class ProcessorSmoke extends GhidraScript {
         }
         Address cur = currentProgram.getMinAddress();
         for (int i = 1; i < args.length; i++) {
+            String expectedMnemonic = args[i].trim();
+            if ("-deleteProject".equals(expectedMnemonic)) {
+                break;
+            }
             if (getInstructionAt(cur) == null && !new DisassembleCommand(cur, null, true).applyTo(currentProgram, monitor)) {
                 throw new AssertionError("failed to disassemble at " + cur);
             }
@@ -25,8 +29,8 @@ public class ProcessorSmoke extends GhidraScript {
                 throw new AssertionError("no instruction at " + cur);
             }
             String actualMnemonic = insn.getMnemonicString();
-            if (!args[i].equals(actualMnemonic)) {
-                throw new AssertionError("mnemonic mismatch at " + cur + ": expected " + args[i]
+            if (!expectedMnemonic.equals(actualMnemonic)) {
+                throw new AssertionError("mnemonic mismatch at " + cur + ": expected " + expectedMnemonic
                     + " got " + actualMnemonic + " (" + insn + ")");
             }
             println("MARK: INSN " + cur + " " + insn);

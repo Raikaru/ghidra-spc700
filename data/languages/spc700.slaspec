@@ -10,6 +10,10 @@ define space register type=register_space size=1;
 define register offset=0x00 size=2 [ PC ];
 define register offset=0x10 size=1 [ A X Y SP PSW ];
 define register offset=0x20 size=1 [ NF VF PF BF HF IF ZF CF ];
+define register offset=0x30 size=4 contextreg;
+define context contextreg
+  ctx_P=(0,0)
+;
 
 define token opbyte (8)
   op = (0,7)
@@ -139,26 +143,41 @@ macro pop8(out) {
 
 RelTarget: $target is rel8 [ target = (inst_next + rel8) & 0xffff; ] { export *:2 target; }
 PCallTarget: $target is imm8 [ target = 0xff00 + imm8; ] { export *:2 target; }
-Abs: !$imm16 is imm16 { export *:2 imm16; }
-AbsX: !$imm16 "+X" is imm16 { local addr:2 = imm16 + zext(X); export *:2 addr; }
-AbsY: !$imm16 "+Y" is imm16 { local addr:2 = imm16 + zext(Y); export *:2 addr; }
-Dp: <$imm8 is imm8 { local addr:2 = 0; addr = imm8; export *:2 addr; }
-DpX: <$imm8 "+X" is imm8 { local low:1 = imm8 + X; local addr:2 = zext(low); export *:2 addr; }
-DpY: <$imm8 "+Y" is imm8 { local low:1 = imm8 + Y; local addr:2 = zext(low); export *:2 addr; }
-DpXInd: [$imm8 "+X"] is imm8 { local ptrLo:1 = imm8 + X; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = zext(lo) | (zext(hi) << 8); export *:2 addr; }
-DpIndY: [$imm8] "+Y" is imm8 { local ptrLo:1 = imm8; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = (zext(lo) | (zext(hi) << 8)) + zext(Y); export *:2 addr; }
+Abs: !$imm16 is imm16 { local addr:2 = imm16; export addr; }
+AbsX: !$imm16 "+X" is imm16 { local addr:2 = imm16 + zext(X); export addr; }
+AbsY: !$imm16 "+Y" is imm16 { local addr:2 = imm16 + zext(Y); export addr; }
+Dp: <$imm8 is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export addr; }
+Dp: <$imm8 is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export addr; }
+DpX: <$imm8 "+X" is ctx_P=0 & imm8 { local low:1 = imm8 + X; local addr:2 = zext(low); export addr; }
+DpX: <$imm8 "+X" is ctx_P=1 & imm8 { local low:1 = imm8 + X; local addr:2 = 0x0100 + zext(low); export addr; }
+DpY: <$imm8 "+Y" is ctx_P=0 & imm8 { local low:1 = imm8 + Y; local addr:2 = zext(low); export addr; }
+DpY: <$imm8 "+Y" is ctx_P=1 & imm8 { local low:1 = imm8 + Y; local addr:2 = 0x0100 + zext(low); export addr; }
+DpXInd: [$imm8 "+X"] is ctx_P=0 & imm8 { local ptrLo:1 = imm8 + X; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = zext(lo) | (zext(hi) << 8); export addr; }
+DpXInd: [$imm8 "+X"] is ctx_P=1 & imm8 { local ptrLo:1 = imm8 + X; local ptrHi:1 = ptrLo + 1; local loAddr:2 = 0x0100 + zext(ptrLo); local hiAddr:2 = 0x0100 + zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = zext(lo) | (zext(hi) << 8); export addr; }
+DpIndY: [$imm8] "+Y" is ctx_P=0 & imm8 { local ptrLo:1 = imm8; local ptrHi:1 = ptrLo + 1; local loAddr:2 = zext(ptrLo); local hiAddr:2 = zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = (zext(lo) | (zext(hi) << 8)) + zext(Y); export addr; }
+DpIndY: [$imm8] "+Y" is ctx_P=1 & imm8 { local ptrLo:1 = imm8; local ptrHi:1 = ptrLo + 1; local loAddr:2 = 0x0100 + zext(ptrLo); local hiAddr:2 = 0x0100 + zext(ptrHi); local lo:1 = *:1 loAddr; local hi:1 = *:1 hiAddr; local addr:2 = (zext(lo) | (zext(hi) << 8)) + zext(Y); export addr; }
 Imm8: #$imm8 is imm8 { export *[const]:1 imm8; }
-DpSrc: <$src8 is src8 { local addr:2 = 0; addr = src8; export *:2 addr; }
-DpDst: <$dst8 is dst8 { local addr:2 = 0; addr = dst8; export *:2 addr; }
+DpSrc: <$src8 is ctx_P=0 & src8 { local addr:2 = 0; addr = src8; export addr; }
+DpSrc: <$src8 is ctx_P=1 & src8 { local off:2 = 0; off = src8; local addr:2 = 0x0100 + off; export addr; }
+DpDst: <$dst8 is ctx_P=0 & dst8 { local addr:2 = 0; addr = dst8; export addr; }
+DpDst: <$dst8 is ctx_P=1 & dst8 { local off:2 = 0; off = dst8; local addr:2 = 0x0100 + off; export addr; }
 ImmSrc: #$src8 is src8 { export *[const]:1 src8; }
-DpBit0: <$imm8 ".0" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit1: <$imm8 ".1" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit2: <$imm8 ".2" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit3: <$imm8 ".3" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit4: <$imm8 ".4" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit5: <$imm8 ".5" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit6: <$imm8 ".6" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
-DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit0: <$imm8 ".0" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit0: <$imm8 ".0" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit1: <$imm8 ".1" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit1: <$imm8 ".1" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit2: <$imm8 ".2" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit2: <$imm8 ".2" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit3: <$imm8 ".3" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit3: <$imm8 ".3" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit4: <$imm8 ".4" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit4: <$imm8 ".4" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit5: <$imm8 ".5" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit5: <$imm8 ".5" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit6: <$imm8 ".6" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit6: <$imm8 ".6" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
+DpBit7: <$imm8 ".7" is ctx_P=0 & imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
+DpBit7: <$imm8 ".7" is ctx_P=1 & imm8 { local off:2 = 0; off = imm8; local addr:2 = 0x0100 + off; export *:1 addr; }
 
 :NOP is op=0x00 { }
 
@@ -216,7 +235,7 @@ DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
 :TCALL "15" is op=0xf1 { local ptr:2 = 0xffc0; call [*:2 ptr]; }
 :RET is op=0x6f { local retsp:1 = SP + 1; local addr:2 = 0x0100 | zext(retsp); return [*:2 addr]; }
 :RETI is op=0x7f { pop8(PSW); unpack_psw(); local retsp:1 = SP + 1; local addr:2 = 0x0100 | zext(retsp); SP = SP + 2; return [*:2 addr]; }
-:BRK is op=0x0f { spc_brk(); }
+:BRK is op=0x0f { BF = 1; IF = 0; pack_psw(); spc_brk(); }
 :SLEEP is op=0xef { spc_sleep(); }
 :STOP is op=0xff { spc_stop(); }
 
@@ -445,8 +464,8 @@ DpBit7: <$imm8 ".7" is imm8 { local addr:2 = 0; addr = imm8; export *:1 addr; }
 
 :CLRC is op=0x60 { CF = 0; pack_psw(); }
 :SETC is op=0x80 { CF = 1; pack_psw(); }
-:CLRP is op=0x20 { PF = 0; pack_psw(); }
-:SETP is op=0x40 { PF = 1; pack_psw(); }
+:CLRP is op=0x20 [ ctx_P=0; globalset(inst_next, ctx_P); ] { PF = 0; pack_psw(); }
+:SETP is op=0x40 [ ctx_P=1; globalset(inst_next, ctx_P); ] { PF = 1; pack_psw(); }
 :CLRV is op=0xe0 { VF = 0; HF = 0; pack_psw(); }
 :EI is op=0xa0 { IF = 1; pack_psw(); }
 :DI is op=0xc0 { IF = 0; pack_psw(); }
